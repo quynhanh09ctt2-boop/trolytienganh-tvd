@@ -1,0 +1,8 @@
+{
+  "name": "English Buddy",
+  "description": "An AI-powered English assistant that uses the Gemini Live API for real-time voice conversations to help users improve their English fluency, vocabulary, and grammar.",
+  "requestFramePermissions": [
+    "microphone"
+  ],
+  "majorCapabilities": []
+}
