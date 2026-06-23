@@ -1,19 +1,38 @@
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Message } from '../types';
+import { Message, SessionStatus } from '../types';
 
 interface Props {
   history: Message[];
   isRecording: boolean;
   onTranslate: (messageId: string, text: string) => Promise<void>;
+  status?: SessionStatus;
+  onStopSession?: () => void;
 }
 
-const ConversationView: React.FC<Props> = ({ history, isRecording, onTranslate }) => {
+const ConversationView: React.FC<Props> = ({ 
+  history, 
+  isRecording, 
+  onTranslate,
+  status,
+  onStopSession
+}) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [translatingIds, setTranslatingIds] = useState<Set<string>>(new Set());
   const [autoTranslate, setAutoTranslate] = useState<boolean>(() => {
     return localStorage.getItem('fluentify_auto_translate') === 'true';
   });
+  const [timeStr, setTimeStr] = useState('09:41');
+
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      setTimeStr(now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }));
+    };
+    updateTime();
+    const interval = setInterval(updateTime, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -104,45 +123,64 @@ const ConversationView: React.FC<Props> = ({ history, isRecording, onTranslate }
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-white/95 backdrop-blur-md rounded-3xl shadow-xl shadow-indigo-100/30 border border-slate-100 overflow-hidden">
-      <div className="px-6 py-4 border-b border-indigo-50/60 bg-gradient-to-r from-indigo-50/40 via-purple-50/20 to-pink-50/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-indigo-50 rounded-xl">
-            💬
+    <div className="flex-1 flex flex-col bg-white/95 backdrop-blur-md rounded-2xl sm:rounded-3xl shadow-xl shadow-indigo-100/30 border border-slate-100 overflow-hidden">
+      <div className="px-4 py-3 sm:px-6 sm:py-4 border-b border-indigo-50/60 bg-gradient-to-r from-indigo-50/40 via-purple-50/20 to-pink-50/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center justify-between w-full sm:w-auto">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 bg-indigo-50 rounded-xl text-base sm:text-lg">
+              💬
+            </div>
+            <div>
+              <h3 className="font-extrabold text-slate-800 text-sm md:text-base tracking-tight">Hội thoại cùng Aria</h3>
+              {isRecording ? (
+                <div className="flex items-center gap-1 mt-0.5">
+                  <span className="flex h-1.5 w-1.5 rounded-full bg-rose-500 animate-ping" />
+                  <span className="text-[10px] font-black text-rose-500 uppercase tracking-widest">Đang nghe...</span>
+                </div>
+              ) : (
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Trực tuyến cùng Gemini</p>
+              )}
+            </div>
           </div>
-          <div>
-            <h3 className="font-extrabold text-slate-800 text-sm md:text-base tracking-tight">Hội thoại bản xứ cùng Aria</h3>
-            {isRecording ? (
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <span className="flex h-2 w-2 rounded-full bg-rose-500 animate-ping" />
-                <span className="text-[10px] font-black text-rose-500 uppercase tracking-widest">Đang nghe bạn nói...</span>
-              </div>
-            ) : (
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Trực tuyến cùng mô hình Gemini AI</p>
-            )}
-          </div>
+          
+          {/* Mobile direct stop button */}
+          {status === SessionStatus.CONNECTED && onStopSession && (
+            <button 
+              onClick={onStopSession}
+              className="sm:hidden flex items-center gap-1.5 px-2.5 py-1.5 bg-rose-600 hover:bg-rose-700/90 text-white rounded-lg text-xs font-black shadow-md shadow-rose-100 cursor-pointer transition-all active:scale-95"
+            >
+              🛑 Dừng
+            </button>
+          )}
         </div>
         
-        <div className="flex items-center gap-3 flex-wrap">
-          <label className="flex items-center gap-2 px-3 py-2 bg-white/90 border border-indigo-100/50 rounded-xl text-[11px] font-bold text-indigo-700 cursor-pointer hover:bg-indigo-50 transition-all shadow-sm">
+        <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto justify-start sm:justify-end">
+          {/* Desktop/Tablet/Phone wrap translate and stop */}
+          <label className="flex items-center gap-2 px-2.5 py-1.5 sm:px-3 sm:py-2 bg-white/90 border border-indigo-100/50 rounded-xl text-[10px] sm:text-[11px] font-bold text-indigo-700 cursor-pointer hover:bg-indigo-50 transition-all shadow-sm">
             <input 
               type="checkbox" 
               checked={autoTranslate} 
               onChange={(e) => setAutoTranslate(e.target.checked)}
               className="rounded text-indigo-600 focus:ring-indigo-500 h-3.5 w-3.5 cursor-pointer accent-indigo-600"
             />
-            <span>Dịch tức thì sang Tiếng Việt</span>
+            <span>Dịch tự động</span>
           </label>
  
           {history.length > 0 && (
             <button 
               onClick={exportChatToExcel}
-              className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-emerald-500 to-green-600 border border-transparent rounded-xl text-xs font-black text-white hover:from-emerald-600 hover:to-green-700 transition-all shadow-md shadow-emerald-100 cursor-pointer"
+              className="flex items-center gap-1 px-2.5 py-1.5 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-xl text-[11px] font-black hover:from-emerald-600 hover:to-green-750 transition-all shadow-md shadow-emerald-100 cursor-pointer"
             >
-              <svg className="w-3.5 h-3.5 text-emerald-100" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
               Xuất Chat (.CSV)
+            </button>
+          )}
+
+          {status === SessionStatus.CONNECTED && onStopSession && (
+            <button 
+              onClick={onStopSession}
+              className="hidden sm:flex items-center gap-1.5 px-3 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-black shadow-md shadow-rose-100 cursor-pointer transition-all active:scale-95"
+            >
+              🛑 Kết thúc buổi học
             </button>
           )}
         </div>
@@ -150,7 +188,7 @@ const ConversationView: React.FC<Props> = ({ history, isRecording, onTranslate }
  
       <div 
         ref={scrollRef}
-        className="flex-1 p-6 overflow-y-auto space-y-6 scroll-smooth bg-gradient-to-b from-[#fbfbfe] to-white"
+        className="flex-1 p-3 sm:p-6 overflow-y-auto space-y-4 sm:space-y-6 scroll-smooth bg-gradient-to-b from-[#fbfbfe] to-white"
       >
         {history.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center p-8 space-y-4">

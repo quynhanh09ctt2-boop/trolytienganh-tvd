@@ -10,12 +10,17 @@ import { GoogleGenAI, Modality, Type } from '@google/genai';
 import { Message, SessionStatus, Topic, VocabularyItem, AppView } from './types';
 import { TOPICS, getSystemInstruction } from './constants';
 
+const getCleanApiKey = (): string => {
+  const rawApiKey = process.env.GEMINI_API_KEY || process.env.API_KEY || '';
+  return (rawApiKey && rawApiKey !== 'undefined' && rawApiKey !== 'null' && rawApiKey.trim() !== '') ? rawApiKey : '';
+};
+
 const App: React.FC = () => {
   const [view, setView] = useState<AppView>('practice');
   const [status, setStatus] = useState<SessionStatus>(SessionStatus.DISCONNECTED);
   const [history, setHistory] = useState<Message[]>([]);
   const [selectedTopic, setSelectedTopic] = useState<Topic>(TOPICS[0]);
-  const [speakingRate, setSpeakingRate] = useState<'slow' | 'normal' | 'fast'>('normal');
+  const [speakingRate, setSpeakingRate] = useState<'slow' | 'normal' | 'fast'>('slow');
   const [isRecording, setIsRecording] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const [vocabularyList, setVocabularyList] = useState<VocabularyItem[]>(() => {
@@ -86,10 +91,12 @@ const App: React.FC = () => {
   };
 
   const handleTranslate = async (messageId: string, text: string) => {
+    const apiKey = getCleanApiKey();
+    if (!apiKey) return;
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const ai = new GoogleGenAI({ apiKey });
       const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3.5-flash',
         contents: `Translate the following English sentence to Vietnamese naturally. If there is pronunciation feedback in brackets, translate that too. Text: "${text}"`,
       });
       const translation = response.text?.trim();
@@ -105,10 +112,12 @@ const App: React.FC = () => {
     const item = vocabularyList.find(i => i.id === vocabId);
     if (!item || (item.definitionTranslation && item.exampleTranslation)) return;
 
+    const apiKey = getCleanApiKey();
+    if (!apiKey) return;
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const ai = new GoogleGenAI({ apiKey });
       const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3.5-flash',
         contents: `Translate the following dictionary entry to Vietnamese.
         Definition: "${item.definition}"
         Example: "${item.example}"`,
@@ -132,10 +141,12 @@ const App: React.FC = () => {
   };
 
   const extractNewVocabulary = async (userText: string, assistantText: string) => {
+    const apiKey = getCleanApiKey();
+    if (!apiKey) return;
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const ai = new GoogleGenAI({ apiKey });
       const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3.5-flash',
         contents: `Analyze this dialogue exchange and extract 1 or 2 high-value English vocabulary words or phrases. User: "${userText}" Aria: "${assistantText}"`,
         config: {
           responseMimeType: "application/json",
@@ -165,13 +176,14 @@ const App: React.FC = () => {
   };
 
   const startSession = async () => {
-    if (!process.env.API_KEY) {
+    const apiKey = getCleanApiKey();
+    if (!apiKey) {
       alert('Vui lòng thiết lập GEMINI_API_KEY ở mục Settings > Secrets để bắt đầu!');
       return;
     }
     try {
       setStatus(SessionStatus.CONNECTING);
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const ai = new GoogleGenAI({ apiKey });
       audioContextInRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
       audioContextOutRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -285,7 +297,7 @@ const App: React.FC = () => {
       <main className="flex-1 max-w-6xl w-full mx-auto p-4 md:p-6 flex flex-col lg:flex-row gap-6">
         {view === 'practice' ? (
           <>
-            <div className="space-y-6 lg:w-1/3">
+            <div className={`space-y-6 lg:w-1/3 ${status === SessionStatus.CONNECTED ? 'hidden lg:block' : 'block'}`}>
               <section className="bg-white/95 backdrop-blur-md p-6 rounded-3xl shadow-lg shadow-indigo-100/40 border border-indigo-100/50 hover:shadow-xl transition-all duration-300">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg font-black text-slate-800 flex items-center gap-1.5">
@@ -367,8 +379,14 @@ const App: React.FC = () => {
                 </button>
               </section>
             </div>
-            <div className="flex-1 lg:w-2/3 h-[calc(100vh-180px)] flex flex-col">
-              <ConversationView history={history} isRecording={isRecording} onTranslate={handleTranslate} />
+            <div className="flex-1 lg:w-2/3 h-[500px] xs:h-[550px] sm:h-[600px] lg:h-[calc(100vh-185px)] min-h-[460px] flex flex-col">
+              <ConversationView 
+                history={history} 
+                isRecording={isRecording} 
+                onTranslate={handleTranslate} 
+                status={status}
+                onStopSession={stopSession}
+              />
             </div>
           </>
         ) : view === 'vocabulary' ? (
