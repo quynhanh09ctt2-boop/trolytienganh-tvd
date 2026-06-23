@@ -4,15 +4,50 @@ import { PronunciationChallenge } from '../types';
 import { GoogleGenAI, Type } from '@google/genai';
 
 const CHALLENGES: PronunciationChallenge[] = [
-  { id: '1', text: 'She sells seashells by the seashore.', category: 'Fluency', difficulty: 'Intermediate', tips: 'Focus on the "sh" vs "s" sounds.' },
-  { id: '2', text: 'Through the thicket of thought.', category: 'Consonants', difficulty: 'Advanced', tips: 'Master the "th" sound by placing tongue between teeth.' },
-  { id: '3', text: 'World, Squirrel, Girl.', category: 'Vowels', difficulty: 'Advanced', tips: 'The "rl" combination requires a subtle tongue curl.' },
+  { id: '1', text: 'She sells seashells by the seashore.', category: 'Fluency', difficulty: 'Intermediate', tips: 'Tập trung phân biệt âm "sh" /ʃ/ và "s" /s/.' },
+  { id: '2', text: 'Through the thicket of thought.', category: 'Consonants', difficulty: 'Advanced', tips: 'Luyện âm "th" vô thanh /θ/ bằng cách đặt lưỡi giữa hai răng.' },
+  { id: '3', text: 'World, Squirrel, Girl.', category: 'Vowels', difficulty: 'Advanced', tips: 'Sự kết hợp âm "rl" yêu cầu uốn cong lưỡi nhẹ ở cuối từ.' },
   { id: '4', text: 'Comfortable, Vegetable, Raspberry.', category: 'Stress', difficulty: 'Intermediate', tips: 'Notice the silent letters and unique syllable stress.' },
-  { id: '5', text: 'Beach vs Bitch', category: 'Vowels', difficulty: 'Beginner', tips: 'Distinguish between the long /i:/ and short /ɪ/.' }
+  { id: '5', text: 'Beach vs Bitch', category: 'Vowels', difficulty: 'Beginner', tips: 'Phân biệt nguyên âm i dài /i:/ trong beach và i ngắn /ɪ/ trong bitch.' },
+  { id: '6', text: 'Can you tell me the way to the nearest bus station?', category: 'Fluency', difficulty: 'Beginner', tips: 'Luyện cách nối âm nhẹ nhàng (tell me, to the) và ngữ điệu câu hỏi.' },
+  { id: '7', text: 'Peter Piper picked a peck of pickled peppers.', category: 'Fluency', difficulty: 'Advanced', tips: 'Thử thách líu lưỡi nổi tiếng giúp rèn luyện cơ miệng với phụ âm bật hơi /p/.' },
+  { id: '8', text: 'I scream, you scream, we all scream for ice cream.', category: 'Fluency', difficulty: 'Intermediate', tips: 'Chú ý sự tương đồng phát âm giữa "scream" và "ice cream".' },
+  { id: '9', text: 'An entrepreneur is looking for a breakthrough opportunity.', category: 'Stress', difficulty: 'Advanced', tips: 'Nhấn chuẩn trọng âm các từ phức tạp /ˌɒntrəprəˈnɜː/ và /ˌɒpəˈtjuːnəti/.' },
+  { id: '10', text: 'Would you like some water?', category: 'Stress', difficulty: 'Beginner', tips: 'Luyện lướt âm (liaison) giữa "Would you" thành /wʊdʒu/ và đọc nhẹ chữ "t" trong water.' },
+  { id: '11', text: 'This is the third thing they thought of.', category: 'Consonants', difficulty: 'Intermediate', tips: 'Luyện cả âm "th" hữu thanh /ð/ (this, the, they) và vô thanh /θ/ (third, thing, thought).' },
+  { id: '12', text: 'We received excellent feedback on our strategy presentation.', category: 'Stress', difficulty: 'Intermediate', tips: 'Chú ý trọng âm rơi vào "feedback" (âm 1), "strategy" (âm 1), "presentation" (âm 3).' }
 ];
 
 const PronunciationLab: React.FC = () => {
-  const [selectedChallenge, setSelectedChallenge] = useState<PronunciationChallenge>(CHALLENGES[0]);
+  const [challenges, setChallenges] = useState<PronunciationChallenge[]>(() => {
+    const saved = localStorage.getItem('pronunciation_challenges');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      } catch (e) {
+        console.error('Error parsing pronunciation challenges from localStorage:', e);
+      }
+    }
+    return CHALLENGES;
+  });
+
+  const [selectedChallenge, setSelectedChallenge] = useState<PronunciationChallenge>(() => {
+    return challenges[0] || CHALLENGES[0];
+  });
+
+  const [newText, setNewText] = useState('');
+  const [newCategory, setNewCategory] = useState<'Vowels' | 'Consonants' | 'Stress' | 'Fluency'>('Fluency');
+  const [newDifficulty, setNewDifficulty] = useState<'Beginner' | 'Intermediate' | 'Advanced'>('Intermediate');
+  const [newTips, setNewTips] = useState('');
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    localStorage.setItem('pronunciation_challenges', JSON.stringify(challenges));
+  }, [challenges]);
   const [isRecording, setIsRecording] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [feedback, setFeedback] = useState<{ score: number; tips: string; details: string } | null>(null);
@@ -34,6 +69,10 @@ const PronunciationLab: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      // Pre-warm the voice list to ensure it's loaded in Chrome/Edge/Safari/iOS/Android
+      window.speechSynthesis.getVoices();
+    }
     return () => {
       if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
@@ -49,6 +88,56 @@ const PronunciationLab: React.FC = () => {
     setFeedback(null);
   }, [selectedChallenge]);
 
+  const getBestEnglishVoice = (): SpeechSynthesisVoice | null => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return null;
+    const voices = window.speechSynthesis.getVoices();
+    if (!voices || voices.length === 0) return null;
+
+    // Prioritize list for high-quality standard native English speakers (US/UK)
+    const priorities = [
+      // 1. Google premium voices (highly standard & warm on Android/Chrome)
+      'Google US English',
+      'Google UK English Female',
+      'Google UK English Male',
+      // 2. Apple Siri premium neural voices (excellent natural speech on Safari, iOS & macOS)
+      'Siri',
+      'Samantha',
+      'Daniel',
+      'Karen',
+      'Alex',
+      // 3. Microsoft desktop voices (highly clear on Windows devices/Edge)
+      'Microsoft David',
+      'Microsoft Zira',
+      'Microsoft Mark',
+      // 4. Any voice containing "Natural" (e.g. Edge Natural voices)
+      'Natural'
+    ];
+
+    // Try to find the first high-quality voice that matches our priority keywords and has an English locale (en-)
+    for (const nameKeyword of priorities) {
+      const matched = voices.find(v => 
+        v.name.toLowerCase().includes(nameKeyword.toLowerCase()) && 
+        (v.lang.toLowerCase().startsWith('en-') || v.lang.toLowerCase() === 'en')
+      );
+      if (matched) return matched;
+    }
+
+    // Fallbacks sorted by preferred locale:
+    // en-US (American standard)
+    const usVoice = voices.find(v => v.lang.toLowerCase() === 'en-us');
+    if (usVoice) return usVoice;
+
+    // en-GB (British standard)
+    const gbVoice = voices.find(v => v.lang.toLowerCase() === 'en-gb');
+    if (gbVoice) return gbVoice;
+
+    // Any English voice
+    const anyEnVoice = voices.find(v => v.lang.toLowerCase().startsWith('en'));
+    if (anyEnVoice) return anyEnVoice;
+
+    return null;
+  };
+
   const speakSample = () => {
     if ('speechSynthesis' in window) {
       if (isPlaying) {
@@ -58,12 +147,26 @@ const PronunciationLab: React.FC = () => {
       }
       
       const utterance = new SpeechSynthesisUtterance(selectedChallenge.text);
-      utterance.lang = 'en-US';
-      utterance.rate = 0.75; // Slightly slower speed for optimal intermediate instruction
+      
+      const bestVoice = getBestEnglishVoice();
+      if (bestVoice) {
+        utterance.voice = bestVoice;
+        utterance.lang = bestVoice.lang;
+        console.log('Selected standard high-quality English voice:', bestVoice.name, '(', bestVoice.lang, ')');
+      } else {
+        utterance.lang = 'en-US';
+      }
+      
+      // Standard rate for foreign language learning (0.8 is the sweet spot: sufficiently slow for clear phonemes, but maintains natural vocal resonance)
+      utterance.rate = 0.8;
+      utterance.pitch = 1.0;
       
       utterance.onstart = () => setIsPlaying(true);
       utterance.onend = () => setIsPlaying(false);
-      utterance.onerror = () => setIsPlaying(false);
+      utterance.onerror = (e) => {
+        console.error('Speech synthesis error:', e);
+        setIsPlaying(false);
+      };
       
       window.speechSynthesis.speak(utterance);
     } else {
@@ -214,7 +317,7 @@ const PronunciationLab: React.FC = () => {
     try {
       const ai = new GoogleGenAI({ apiKey: cleanApiKey });
       const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3.5-flash',
         contents: [
           {
             parts: [
@@ -288,39 +391,191 @@ const PronunciationLab: React.FC = () => {
     }
   };
 
+  const handleAddChallenge = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newText.trim()) {
+      alert('Vui lòng nhập mẫu câu tiếng Anh cần luyện tập!');
+      return;
+    }
+
+    const newChallenge: PronunciationChallenge = {
+      id: `custom_${Date.now()}`,
+      text: newText.trim(),
+      category: newCategory,
+      difficulty: newDifficulty,
+      tips: newTips.trim() || 'Tập trung đọc to, rõ ràng và nhấn chuẩn các âm cuối.'
+    };
+
+    const updated = [...challenges, newChallenge];
+    setChallenges(updated);
+    setSelectedChallenge(newChallenge);
+    setFeedback(null);
+    setNewText('');
+    setNewTips('');
+    setShowAddForm(false);
+  };
+
+  const handleDeleteClick = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDeletingId(id);
+  };
+
+  const handleCancelDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDeletingId(null);
+  };
+
+  const handleConfirmDelete = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const updated = challenges.filter(c => c.id !== id);
+    setChallenges(updated);
+    
+    // If the currently selected challenge is deleted, select the first available
+    if (selectedChallenge.id === id) {
+      setSelectedChallenge(updated[0] || CHALLENGES[0]);
+      setFeedback(null);
+    }
+    setDeletingId(null);
+  };
+
   return (
     <div className="flex-1 flex flex-col gap-4 sm:gap-6 max-w-4xl mx-auto w-full">
       <div className="bg-white/95 backdrop-blur-md p-4 sm:p-6 md:p-8 rounded-2xl sm:rounded-3xl shadow-xl shadow-indigo-100/40 border border-slate-100">
         <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
           {/* Challenge List */}
-          <div className="lg:w-1/3 w-full lg:min-w-[280px]">
-            <div className="flex items-center gap-1.5 mb-3">
-              <span className="text-xl">📚</span>
-              <h2 className="text-base sm:text-lg font-black text-slate-800 tracking-tight">Thư viện luyện tập</h2>
+          <div className="lg:w-1/3 w-full lg:min-w-[280px] flex flex-col">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-1.5 font-sans">
+                <span className="text-xl">📚</span>
+                <h2 className="text-base sm:text-lg font-black text-slate-800 tracking-tight">Thư viện luyện tập</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddForm(!showAddForm)}
+                className="text-xs font-black text-indigo-600 hover:text-indigo-800 flex items-center gap-1 bg-indigo-50 hover:bg-indigo-100/80 px-2.5 py-1 rounded-lg transition-all cursor-pointer"
+              >
+                {showAddForm ? 'Đóng' : '➕ Thêm câu'}
+              </button>
             </div>
-            
-            <div className="space-y-2 max-h-[160px] lg:max-h-[420px] overflow-y-auto pr-1">
-              {CHALLENGES.map((challenge) => (
+
+            {showAddForm && (
+              <form onSubmit={handleAddChallenge} className="mb-4 p-3 bg-indigo-50/50 rounded-xl border border-indigo-100/50 space-y-2.5 animate-in slide-in-from-top-2 duration-200">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-indigo-600 uppercase tracking-wider block">Mẫu câu tiếng Anh *</label>
+                  <textarea
+                    required
+                    value={newText}
+                    onChange={(e) => setNewText(e.target.value)}
+                    placeholder="E.g., Practice makes perfect."
+                    rows={2}
+                    className="w-full text-xs font-semibold p-2 rounded-lg border border-slate-200 bg-white focus:ring-1 focus:ring-indigo-500 text-slate-700 resize-none"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block block mb-0.5">Chuyên mục</label>
+                    <select
+                      value={newCategory}
+                      onChange={(e) => setNewCategory(e.target.value as any)}
+                      className="w-full text-[11px] font-bold p-1 rounded-lg border border-slate-200 bg-white text-slate-600"
+                    >
+                      <option value="Fluency">Fluency</option>
+                      <option value="Vowels">Vowels</option>
+                      <option value="Consonants">Consonants</option>
+                      <option value="Stress">Stress</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block block mb-0.5">Độ khó</label>
+                    <select
+                      value={newDifficulty}
+                      onChange={(e) => setNewDifficulty(e.target.value as any)}
+                      className="w-full text-[11px] font-bold p-1 rounded-lg border border-slate-200 bg-white text-slate-600"
+                    >
+                      <option value="Beginner">Beginner</option>
+                      <option value="Intermediate">Intermediate</option>
+                      <option value="Advanced">Advanced</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Gợi ý cách đọc (Tùy chọn)</label>
+                  <input
+                    value={newTips}
+                    onChange={(e) => setNewTips(e.target.value)}
+                    placeholder="E.g., Chú ý phát âm gió..."
+                    className="w-full text-xs p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600"
+                  />
+                </div>
+
                 <button
+                  type="submit"
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black py-2 rounded-lg transition shadow-sm cursor-pointer"
+                >
+                  Xác nhận thêm câu
+                </button>
+              </form>
+            )}
+            
+            <div className="space-y-2 max-h-[220px] lg:max-h-[420px] overflow-y-auto pr-1">
+              {challenges.map((challenge) => (
+                <div
                   key={challenge.id}
                   onClick={() => { setSelectedChallenge(challenge); setFeedback(null); }}
-                  className={`w-full text-left p-3 sm:p-4 rounded-xl border transition-all duration-200 cursor-pointer ${
+                  className={`group relative w-full text-left p-3 sm:p-4 rounded-xl border transition-all duration-200 cursor-pointer ${
                     selectedChallenge.id === challenge.id
                       ? 'border-indigo-500 bg-indigo-50/70 shadow-sm ring-2 ring-indigo-100'
                       : 'border-slate-100 hover:border-slate-300 bg-slate-50/50'
                   }`}
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <span className={`text-[9px] sm:text-[10px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full ${
+                    <span className={`text-[9px] sm:text-[10px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-full ${
                       challenge.difficulty === 'Beginner' ? 'text-emerald-600 bg-emerald-50' :
                       challenge.difficulty === 'Intermediate' ? 'text-amber-600 bg-amber-50' : 'text-rose-600 bg-rose-50'
                     }`}>
                       {challenge.difficulty}
                     </span>
-                    <span className="text-[9px] sm:text-[10px] text-slate-400 font-bold uppercase tracking-wider">{challenge.category}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[9px] sm:text-[10px] text-slate-400 font-bold uppercase tracking-wider">{challenge.category}</span>
+                      
+                      {/* Delete button or confirmation */}
+                      {deletingId === challenge.id ? (
+                        <div className="flex items-center gap-1 bg-white/80 p-0.5 rounded border border-rose-100 shadow-sm animate-in scale-in-95 duration-150">
+                          <button
+                            type="button"
+                            onClick={(e) => handleConfirmDelete(challenge.id, e)}
+                            className="bg-rose-500 hover:bg-rose-600 text-white font-extrabold text-[9px] px-1.5 py-0.5 rounded cursor-pointer transition-colors"
+                          >
+                            Xóa
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleCancelDelete}
+                            className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-extrabold text-[9px] px-1.5 py-0.5 rounded cursor-pointer transition-colors"
+                          >
+                            Hủy
+                          </button>
+                        </div>
+                      ) : (
+                        challenge.id.startsWith('custom_') && (
+                          <button
+                            type="button"
+                            onClick={(e) => handleDeleteClick(challenge.id, e)}
+                            className="text-slate-300 hover:text-rose-600 p-0.5 rounded transition hover:scale-110 cursor-pointer flex items-center justify-center"
+                            title="Xóa mẫu câu này"
+                          >
+                            <svg className="w-3.5 h-3.5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        )
+                      )}
+                    </div>
                   </div>
-                  <p className="font-bold text-slate-700 truncate text-xs sm:text-sm">{challenge.text}</p>
-                </button>
+                  <p className="font-bold text-slate-700 truncate text-xs sm:text-sm pr-4">{challenge.text}</p>
+                </div>
               ))}
             </div>
           </div>
