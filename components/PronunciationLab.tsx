@@ -337,7 +337,7 @@ const PronunciationLab: React.FC = () => {
     try {
       const ai = new GoogleGenAI({ apiKey: cleanApiKey });
       const response = await ai.models.generateContent({
-        model: 'gemini-3.5-flash',
+        model: 'gemini-2.5-flash',
         contents: [
           {
             parts: [
