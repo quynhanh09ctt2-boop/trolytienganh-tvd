@@ -38,6 +38,7 @@ export interface PronunciationChallenge {
   category: 'Vowels' | 'Consonants' | 'Stress' | 'Fluency';
   difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
   tips: string;
+  translation?: string;
 }
 
 export type AppView = 'practice' | 'vocabulary' | 'pronunciation';

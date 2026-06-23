@@ -15,6 +15,22 @@ const getCleanApiKey = (): string => {
   return (rawApiKey && rawApiKey !== 'undefined' && rawApiKey !== 'null' && rawApiKey.trim() !== '') ? rawApiKey : '';
 };
 
+const googleTranslate = async (text: string): Promise<string> => {
+  try {
+    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=vi&dt=t&q=${encodeURIComponent(text)}`;
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('Google Translate request failed');
+    const data = await response.json();
+    if (data && data[0]) {
+      return data[0].map((item: any) => item[0]).join('');
+    }
+    throw new Error('Invalid translation format');
+  } catch (error) {
+    console.error('Google Translate error:', error);
+    throw error;
+  }
+};
+
 const App: React.FC = () => {
   const [view, setView] = useState<AppView>('practice');
   const [status, setStatus] = useState<SessionStatus>(SessionStatus.DISCONNECTED);
@@ -91,6 +107,16 @@ const App: React.FC = () => {
   };
 
   const handleTranslate = async (messageId: string, text: string) => {
+    try {
+      const translation = await googleTranslate(text);
+      if (translation) {
+        setHistory(prev => prev.map(msg => msg.id === messageId ? { ...msg, translation } : msg));
+        return;
+      }
+    } catch (gErr) {
+      console.warn('Google Translate fell back:', gErr);
+    }
+
     const apiKey = getCleanApiKey();
     if (!apiKey) return;
     try {
@@ -110,7 +136,22 @@ const App: React.FC = () => {
 
   const handleTranslateVocab = async (vocabId: string) => {
     const item = vocabularyList.find(i => i.id === vocabId);
-    if (!item || (item.definitionTranslation && item.exampleTranslation)) return;
+    if (!item) return;
+
+    try {
+      const defTrans = await googleTranslate(item.definition);
+      const exTrans = await googleTranslate(item.example);
+      if (defTrans && exTrans) {
+        setVocabularyList(prev => prev.map(i => i.id === vocabId ? { 
+          ...i, 
+          definitionTranslation: defTrans, 
+          exampleTranslation: exTrans 
+        } : i));
+        return;
+      }
+    } catch (gErr) {
+      console.warn('Google Translate vocab fell back:', gErr);
+    }
 
     const apiKey = getCleanApiKey();
     if (!apiKey) return;

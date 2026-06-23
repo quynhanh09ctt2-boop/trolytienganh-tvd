@@ -4,19 +4,35 @@ import { PronunciationChallenge } from '../types';
 import { GoogleGenAI, Type } from '@google/genai';
 
 const CHALLENGES: PronunciationChallenge[] = [
-  { id: '1', text: 'She sells seashells by the seashore.', category: 'Fluency', difficulty: 'Intermediate', tips: 'Tập trung phân biệt âm "sh" /ʃ/ và "s" /s/.' },
-  { id: '2', text: 'Through the thicket of thought.', category: 'Consonants', difficulty: 'Advanced', tips: 'Luyện âm "th" vô thanh /θ/ bằng cách đặt lưỡi giữa hai răng.' },
-  { id: '3', text: 'World, Squirrel, Girl.', category: 'Vowels', difficulty: 'Advanced', tips: 'Sự kết hợp âm "rl" yêu cầu uốn cong lưỡi nhẹ ở cuối từ.' },
-  { id: '4', text: 'Comfortable, Vegetable, Raspberry.', category: 'Stress', difficulty: 'Intermediate', tips: 'Notice the silent letters and unique syllable stress.' },
-  { id: '5', text: 'Beach vs Bitch', category: 'Vowels', difficulty: 'Beginner', tips: 'Phân biệt nguyên âm i dài /i:/ trong beach và i ngắn /ɪ/ trong bitch.' },
-  { id: '6', text: 'Can you tell me the way to the nearest bus station?', category: 'Fluency', difficulty: 'Beginner', tips: 'Luyện cách nối âm nhẹ nhàng (tell me, to the) và ngữ điệu câu hỏi.' },
-  { id: '7', text: 'Peter Piper picked a peck of pickled peppers.', category: 'Fluency', difficulty: 'Advanced', tips: 'Thử thách líu lưỡi nổi tiếng giúp rèn luyện cơ miệng với phụ âm bật hơi /p/.' },
-  { id: '8', text: 'I scream, you scream, we all scream for ice cream.', category: 'Fluency', difficulty: 'Intermediate', tips: 'Chú ý sự tương đồng phát âm giữa "scream" và "ice cream".' },
-  { id: '9', text: 'An entrepreneur is looking for a breakthrough opportunity.', category: 'Stress', difficulty: 'Advanced', tips: 'Nhấn chuẩn trọng âm các từ phức tạp /ˌɒntrəprəˈnɜː/ và /ˌɒpəˈtjuːnəti/.' },
-  { id: '10', text: 'Would you like some water?', category: 'Stress', difficulty: 'Beginner', tips: 'Luyện lướt âm (liaison) giữa "Would you" thành /wʊdʒu/ và đọc nhẹ chữ "t" trong water.' },
-  { id: '11', text: 'This is the third thing they thought of.', category: 'Consonants', difficulty: 'Intermediate', tips: 'Luyện cả âm "th" hữu thanh /ð/ (this, the, they) và vô thanh /θ/ (third, thing, thought).' },
-  { id: '12', text: 'We received excellent feedback on our strategy presentation.', category: 'Stress', difficulty: 'Intermediate', tips: 'Chú ý trọng âm rơi vào "feedback" (âm 1), "strategy" (âm 1), "presentation" (âm 3).' }
+  { id: '1', text: 'She sells seashells by the seashore.', category: 'Fluency', difficulty: 'Intermediate', tips: 'Tập trung phân biệt âm "sh" /ʃ/ và "s" /s/.', translation: 'Cô ấy bán vỏ sò bên bờ biển.' },
+  { id: '2', text: 'Through the thicket of thought.', category: 'Consonants', difficulty: 'Advanced', tips: 'Luyện âm "th" vô thanh /θ/ bằng cách đặt lưỡi giữa hai răng.', translation: 'Băng qua bụi rậm của dòng suy nghĩ.' },
+  { id: '3', text: 'World, Squirrel, Girl.', category: 'Vowels', difficulty: 'Advanced', tips: 'Sự kết hợp âm "rl" yêu cầu uốn cong lưỡi nhẹ ở cuối từ.', translation: 'Thế giới, Con sóc, Cô gái.' },
+  { id: '4', text: 'Comfortable, Vegetable, Raspberry.', category: 'Stress', difficulty: 'Intermediate', tips: 'Notice the silent letters and unique syllable stress.', translation: 'Thoải mái, Rau củ, Quả phúc bồn tử.' },
+  { id: '5', text: 'Beach vs Bitch', category: 'Vowels', difficulty: 'Beginner', tips: 'Phân biệt nguyên âm i dài /i:/ trong beach và i ngắn /ɪ/ trong bitch.', translation: 'Bãi biển so với Từ lóng thô lỗ.' },
+  { id: '6', text: 'Can you tell me the way to the nearest bus station?', category: 'Fluency', difficulty: 'Beginner', tips: 'Luyện cách nối âm nhẹ nhàng (tell me, to the) và ngữ điệu câu hỏi.', translation: 'Bạn có thể chỉ cho tôi đường đến trạm xe buýt gần nhất được không?' },
+  { id: '7', text: 'Peter Piper picked a peck of pickled peppers.', category: 'Fluency', difficulty: 'Advanced', tips: 'Thử thách líu lưỡi nổi tiếng giúp rèn luyện cơ miệng với phụ âm bật hơi /p/.', translation: 'Peter Piper đã nhặt một đấu ớt muối.' },
+  { id: '8', text: 'I scream, you scream, we all scream for ice cream.', category: 'Fluency', difficulty: 'Intermediate', tips: 'Chú ý sự tương đồng phát âm giữa "scream" và "ice cream".', translation: 'Tôi hét lên, bạn hét lên, tất cả chúng ta đều hét lên đòi ăn kem.' },
+  { id: '9', text: 'An entrepreneur is looking for a breakthrough opportunity.', category: 'Stress', difficulty: 'Advanced', tips: 'Nhấn chuẩn trọng âm các từ phức tạp /ˌɒntrəprəˈnɜː/ và /ˌɒpəˈtjuːnəti/.', translation: 'Một nhà doanh nghiệp đang tìm kiếm một cơ hội mang tính đột phá.' },
+  { id: '10', text: 'Would you like some water?', category: 'Stress', difficulty: 'Beginner', tips: 'Luyện lướt âm (liaison) giữa "Would you" thành /wʊdʒu/ và đọc nhẹ chữ "t" trong water.', translation: 'Bạn có muốn dùng một ít nước không?' },
+  { id: '11', text: 'This is the third thing they thought of.', category: 'Consonants', difficulty: 'Intermediate', tips: 'Luyện cả âm "th" hữu thanh /ð/ (this, the, they) và vô thanh /θ/ (third, thing, thought).', translation: 'Đây là điều thứ ba mà họ nghĩ tới.' },
+  { id: '12', text: 'We received excellent feedback on our strategy presentation.', category: 'Stress', difficulty: 'Intermediate', tips: 'Chú ý trọng âm rơi vào "feedback" (âm 1), "strategy" (âm 1), "presentation" (âm 3).', translation: 'Chúng tôi đã nhận được những phản hồi tuyệt vời về bài thuyết trình chiến lược của mình.' }
 ];
+
+const googleTranslate = async (text: string): Promise<string> => {
+  try {
+    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=vi&dt=t&q=${encodeURIComponent(text)}`;
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('Google Translate request failed');
+    const data = await response.json();
+    if (data && data[0]) {
+      return data[0].map((item: any) => item[0]).join('');
+    }
+    throw new Error('Invalid translation format');
+  } catch (error) {
+    console.error('Google Translate error:', error);
+    throw error;
+  }
+};
 
 const PronunciationLab: React.FC = () => {
   const [challenges, setChallenges] = useState<PronunciationChallenge[]>(() => {
@@ -42,8 +58,11 @@ const PronunciationLab: React.FC = () => {
   const [newCategory, setNewCategory] = useState<'Vowels' | 'Consonants' | 'Stress' | 'Fluency'>('Fluency');
   const [newDifficulty, setNewDifficulty] = useState<'Beginner' | 'Intermediate' | 'Advanced'>('Intermediate');
   const [newTips, setNewTips] = useState('');
+  const [newTranslation, setNewTranslation] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [showTranslation, setShowTranslation] = useState(false);
+  const [isTranslating, setIsTranslating] = useState(false);
 
   useEffect(() => {
     localStorage.setItem('pronunciation_challenges', JSON.stringify(challenges));
@@ -86,6 +105,7 @@ const PronunciationLab: React.FC = () => {
     }
     setIsPlaying(false);
     setFeedback(null);
+    setShowTranslation(false);
   }, [selectedChallenge]);
 
   const getBestEnglishVoice = (): SpeechSynthesisVoice | null => {
@@ -403,7 +423,8 @@ const PronunciationLab: React.FC = () => {
       text: newText.trim(),
       category: newCategory,
       difficulty: newDifficulty,
-      tips: newTips.trim() || 'Tập trung đọc to, rõ ràng và nhấn chuẩn các âm cuối.'
+      tips: newTips.trim() || 'Tập trung đọc to, rõ ràng và nhấn chuẩn các âm cuối.',
+      translation: newTranslation.trim() || undefined
     };
 
     const updated = [...challenges, newChallenge];
@@ -412,7 +433,61 @@ const PronunciationLab: React.FC = () => {
     setFeedback(null);
     setNewText('');
     setNewTips('');
+    setNewTranslation('');
     setShowAddForm(false);
+  };
+
+  const translateChallengeText = async () => {
+    setIsTranslating(true);
+    setShowTranslation(true);
+
+    try {
+      const translationText = await googleTranslate(selectedChallenge.text);
+      if (translationText) {
+        const updatedChallenges = challenges.map(c => 
+          c.id === selectedChallenge.id ? { ...c, translation: translationText } : c
+        );
+        setChallenges(updatedChallenges);
+        setSelectedChallenge({ ...selectedChallenge, translation: translationText });
+        localStorage.setItem('pronunciation_challenges', JSON.stringify(updatedChallenges));
+        setIsTranslating(false);
+        return;
+      }
+    } catch (gErr) {
+      console.warn('Google Translate custom challenge fell back:', gErr);
+    }
+
+    const rawApiKey = process.env.GEMINI_API_KEY || process.env.API_KEY || '';
+    const cleanApiKey = (rawApiKey && rawApiKey !== 'undefined' && rawApiKey !== 'null' && rawApiKey.trim() !== '') ? rawApiKey : '';
+
+    if (!cleanApiKey) {
+      alert('Không nhận diện được khóa API để chạy dịch thuật bằng AI. Vui lòng kết nối Internet.');
+      setIsTranslating(false);
+      return;
+    }
+
+    try {
+      const ai = new GoogleGenAI({ apiKey: cleanApiKey });
+      const response = await ai.models.generateContent({
+        model: 'gemini-3.5-flash',
+        contents: `Translate the following English sentence to Vietnamese naturally. Output ONLY the translated Vietnamese text, with no extra explanations or quotation marks. Text: "${selectedChallenge.text}"`,
+      });
+
+      const translationText = response.text?.trim() || '';
+      if (translationText) {
+        const updatedChallenges = challenges.map(c => 
+          c.id === selectedChallenge.id ? { ...c, translation: translationText } : c
+        );
+        setChallenges(updatedChallenges);
+        setSelectedChallenge({ ...selectedChallenge, translation: translationText });
+        localStorage.setItem('pronunciation_challenges', JSON.stringify(updatedChallenges));
+      }
+    } catch (err) {
+      console.error('Translation error:', err);
+      alert('Không thể dịch nghĩa: Vui lòng kiểm tra kết nối mạng của bạn.');
+    } finally {
+      setIsTranslating(false);
+    }
   };
 
   const handleDeleteClick = (id: string, e: React.MouseEvent) => {
@@ -506,6 +581,16 @@ const PronunciationLab: React.FC = () => {
                     value={newTips}
                     onChange={(e) => setNewTips(e.target.value)}
                     placeholder="E.g., Chú ý phát âm gió..."
+                    className="w-full text-xs p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Dịch nghĩa Việt ngữ (Tùy chọn)</label>
+                  <input
+                    value={newTranslation}
+                    onChange={(e) => setNewTranslation(e.target.value)}
+                    placeholder="E.g., Cô ấy bán vỏ sò bên bờ biển..."
                     className="w-full text-xs p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600"
                   />
                 </div>
@@ -617,6 +702,49 @@ const PronunciationLab: React.FC = () => {
                     </>
                   )}
                 </button>
+              </div>
+
+              {/* Bản dịch Việt ngữ */}
+              <div className="flex flex-col items-center justify-center gap-1.5 pt-1">
+                {selectedChallenge.translation ? (
+                  <div className="space-y-1.5 text-center">
+                    <button
+                      type="button"
+                      onClick={() => setShowTranslation(!showTranslation)}
+                      className="text-[10px] font-black text-indigo-500 hover:text-indigo-700 transition items-center gap-1 inline-flex bg-white/80 hover:bg-white px-2.5 py-1 rounded-full border border-indigo-100 shadow-sm cursor-pointer"
+                    >
+                      <span>{showTranslation ? '🙈 Ẩn nghĩa tiếng Việt' : '👁️ Xem nghĩa tiếng Việt'}</span>
+                    </button>
+                    {showTranslation && (
+                      <p className="text-xs sm:text-sm font-extrabold text-indigo-600 bg-white/50 backdrop-blur px-3 py-1.5 rounded-xl border border-indigo-50 inline-block animate-in fade-in slide-in-from-top-1">
+                        🇻🇳 {selectedChallenge.translation}
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-1.5 text-center">
+                    <button
+                      type="button"
+                      disabled={isTranslating}
+                      onClick={translateChallengeText}
+                      className="text-[10px] font-black text-indigo-500 hover:text-indigo-700 transition items-center gap-1 inline-flex bg-white/80 hover:bg-white px-2.5 py-1 rounded-full border border-indigo-100 shadow-sm cursor-pointer disabled:opacity-60"
+                    >
+                      {isTranslating ? (
+                        <>
+                          <div className="w-2.5 h-2.5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mr-1 inline-block" />
+                          <span>Đang dịch...</span>
+                        </>
+                      ) : (
+                        <span>✨ Dịch nghĩa bằng AI</span>
+                      )}
+                    </button>
+                    {showTranslation && !isTranslating && (
+                      <p className="text-xs sm:text-sm font-extrabold text-indigo-600 bg-white/50 backdrop-blur px-3 py-1.5 rounded-xl border border-indigo-50 inline-block animate-in fade-in slide-in-from-top-1">
+                        🇻🇳 {selectedChallenge.translation || 'Không tìm thấy bản dịch.'}
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="bg-white/80 backdrop-blur border border-indigo-50/60 p-3 rounded-xl max-w-sm mx-auto shadow-sm">
